@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Multi-Product Capacity Dashboard</title>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5; color: #333;
+      height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+    header {
+      background: linear-gradient(135deg, #BE2BBB, #BE2BBB);
+      color: white; padding: 12px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; gap: 12px;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.4px; }
+    header p  { font-size: 0.72rem; opacity: 0.8; margin-top: 2px; }
+    .layout { display: flex; flex: 1; overflow: hidden; }
+    .sidebar {
+      width: 340px; min-width: 300px; background: #fff;
+      border-right: 1px solid #dde3ec; display: flex;
+      flex-direction: column; flex-shrink: 0; overflow: hidden;
+    }
+    .tab-nav {
+      display: flex; flex-wrap: wrap; background: #f5f7fb;
+      border-bottom: 2px solid #dde3ec; flex-shrink: 0;
+    }
+    .tab-btn {
+      flex: 1; min-width: 0; padding: 8px 4px; font-size: 0.68rem;
+      font-weight: 700; text-align: center; cursor: pointer; border: none;
+      background: transparent; color: #888; border-bottom: 3px solid transparent;
+      transition: all 0.15s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tab-btn:hover { background: #eef2f9; color: #555; }
+    .tab-btn.active      { color: #1a3c6e; border-bottom-color: #2e6da4; background: #fff; }
+    .tab-btn.active.oor  { color: #b35a00; border-bottom-color: #e8872a; }
+    .tab-btn.active.xuri { color: #6c2fa0; border-bottom-color: #8e44ad; }
+    .tab-btn.active.crf  { color: #0e7a65; border-bottom-color: #16a085; }
+    .tab-panels { flex: 1; overflow-y: auto; }
+    .tab-panel  { display: none; padding: 16px; }
+    .tab-panel.active { display: block; }
+    .section-title {
+      font-size: 0.67rem; font-weight: 700; letter-spacing: 1.1px;
+      text-transform: uppercase; color: #2e6da4;
+      border-bottom: 2px solid #e8eef6; padding-bottom: 5px; margin-bottom: 10px;
+    }
+    .res-card { border-radius: 9px; padding: 12px 13px; border: 1.5px solid; }
+    .res-card.cor  { border-color: #0072B2; background: #f0f6ff; }
+    .res-card.oor  { border-color: #E69F00; background: #fff8f0; }
+    .res-card.xuri { border-color: #CC79A7; background: #faf0ff; }
+    .res-card.crf  { border-color: #009E73; background: #f0faf8; }
+    .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .input-block label { font-size: 0.67rem; font-weight: 600; color: #666; display: block; margin-bottom: 3px; }
+    .input-block input {
+      width: 100%; padding: 5px 7px; border: 1px solid #cdd4e0;
+      border-radius: 5px; font-size: 0.85rem; text-align: center; background: #fff;
+    }
+    .input-block input:focus { outline: none; border-color: #0072B2; }
+    .input-block input.invalid { border-color: #e74c3c; background: #fff5f5; }
+    .input-block .unit { font-size: 0.62rem; color: #aaa; margin-top: 2px; text-align: right; }
+    .range-section { margin-top: 10px; border-top: 1px dashed #c0cde0; padding-top: 10px; }
+    .range-section-title {
+      font-size: 0.67rem; font-weight: 700; color: #666;
+      margin-bottom: 6px; letter-spacing: 0.8px; text-transform: uppercase;
+    }
+    .range-hint { font-size: 0.62rem; color: #aaa; margin-top: 4px; }
+    .util-limit-row { display: flex; flex-direction: column; gap: 3px; margin-top: 10px; }
+    .util-limit-row label { font-size: 0.7rem; font-weight: 600; color: #555; display: flex; justify-content: space-between; }
+    .util-limit-row input[type=range] { width: 100%; }
+    .util-limit-row.cor  input[type=range] { accent-color: #0072B2; }
+    .util-limit-row.oor  input[type=range] { accent-color: #E69F00; }
+    .util-limit-row.xuri input[type=range] { accent-color: #CC79A7; }
+    .util-limit-row.crf  input[type=range] { accent-color: #009E73; }
+    .slider-end-labels { display: flex; justify-content: space-between; font-size: 0.62rem; color: #aaa; }
+    .util-limit-val { font-weight: 700; }
+    .cor  .util-limit-val { color: #0072B2; }
+    .oor  .util-limit-val { color: #E69F00; }
+    .xuri .util-limit-val { color: #CC79A7; }
+    .crf  .util-limit-val { color: #009E73; }
+    .res-kpi-row { display: flex; gap: 6px; margin-top: 12px; }
+    .res-kpi { flex:1; background:#fff; border:1px solid #dde3ec; border-radius:7px; padding:6px 8px; text-align:center; }
+    .res-kpi .rk-val { font-size: 1rem; font-weight: 700; }
+    .res-kpi .rk-lbl { font-size: 0.6rem; color: #888; margin-top: 1px; }
+    .slider-wrap { padding: 3px 0 8px; }
+    .slider-wrap > label { font-size: 0.78rem; color: #555; display: block; margin-bottom: 5px; }
+    .slider-wrap input[type=range] { width: 100%; accent-color: #0072B2; }
+    .slider-labels { display: flex; justify-content: space-between; font-size: 0.68rem; color: #aaa; }
+    .mix-display { text-align:center; font-size:0.82rem; font-weight:700; color:#0072B2; margin-top:6px; padding:6px; background:#f0f6ff; border-radius:7px; }
+    .bottleneck-box { background:#fff9f0; border:1px solid #f0c050; border-radius:8px; padding:10px 12px; }
+    .bn-title { font-weight:700; color:#b8860b; font-size:0.75rem; margin-bottom:6px; }
+    .bn-item  { display:flex; justify-content:space-between; padding:3px 0; font-size:0.77rem; align-items:center; }
+    .bn-item .bn-name  { flex:1; font-weight:600; }
+    .bn-item .bn-badge { font-size:0.63rem; font-weight:700; padding:1px 6px; border-radius:10px; margin-right:5px; white-space:nowrap; }
+    .badge-binding { background:#fde8e8; color:#c0392b; border:1px solid #f5b7b1; }
+    .badge-warn    { background:#fef5e0; color:#d68910; border:1px solid #f9e0a0; }
+    .badge-ok      { background:#e9f7ef; color:#1e8449; border:1px solid #a9dfbf; }
+    .bn-item .bn-pct { font-weight:700; min-width:44px; text-align:right; }
+    .bn-pct.over{color:#e74c3c;} .bn-pct.warn{color:#e67e22;} .bn-pct.ok{color:#27ae60;}
+    .bn-bar-bg { background:#eee; border-radius:4px; height:5px; margin:2px 0 5px; }
+    .bn-bar    { height:5px; border-radius:4px; transition:width .3s; }
+    .binding-label { margin-top:7px; font-size:0.76rem; font-weight:700; }
+    .intercept-table { width:100%; border-collapse:collapse; font-size:0.74rem; margin-bottom:12px; }
+    .intercept-table th { background:#f0f4fb; padding:5px 6px; text-align:center; font-weight:600; color:#444; border-bottom:1px solid #dde3ec; }
+    .intercept-table td { padding:5px 6px; text-align:center; border-bottom:1px solid #f0f2f5; font-weight:600; }
+    .equation-box { background:#f0f4fb; border:1px solid #cdd4e0; border-radius:8px; padding:10px 13px; font-size:0.74rem; color:#444; line-height:1.85; }
+    .equation-box .eq { font-family:'Courier New',monospace; font-size:0.77rem; color:#1a3c6e; }
+    .summary-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+    .sum-card { background:#f8faff; border:1px solid #dde3ec; border-radius:8px; padding:8px 10px; }
+    .sum-card-header { display:flex; align-items:center; gap:5px; font-size:0.7rem; font-weight:700; margin-bottom:6px; }
+    .sum-row { display:flex; justify-content:space-between; font-size:0.74rem; padding:2px 0; }
+    .sum-row .lbl { color:#777; } .sum-row .val { font-weight:700; }
+    .cor-text  { color:#0072B2; }
+    .oor-text  { color:#b35a00; }
+    .xuri-text { color:#CC79A7; }
+    .crf-text  { color:#009E73; }
+    .main {
+      flex: 1; padding: 16px 20px; display: flex;
+      flex-direction: column; gap: 14px; overflow-y: auto; min-width: 0;
+    }
+    .chart-card {
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07); padding: 16px 20px; flex-shrink: 0;
+    }
+    .chart-card h2 { font-size: 0.9rem; color: #333; margin-bottom: 10px; }
+    .line-toggle-bar {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      margin-bottom: 10px; padding: 10px 14px;
+      background: #f5f7fb; border-radius: 10px; border: 1px solid #e4e9f2;
+    }
+    .line-toggle-bar .bar-label {
+      font-size: 0.66rem; font-weight: 700; color: #aaa;
+      text-transform: uppercase; letter-spacing: 0.9px; margin-right: 2px; white-space: nowrap;
+    }
+    .pill-divider { width:1px; height:26px; background:#dde3ec; margin:0 3px; flex-shrink:0; }
+    .line-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 6px 14px 6px 10px; border-radius: 999px; border: 2px solid;
+      cursor: pointer; font-size: 0.75rem; font-weight: 700;
+      transition: background 0.15s, color 0.15s, opacity 0.15s, box-shadow 0.15s, transform 0.1s;
+      user-select: none; white-space: nowrap; background: #fff; opacity: 0.5;
+    }
+    .line-pill:active { transform: scale(0.95); }
+    .line-pill .pill-label { text-decoration: line-through; }
+    .line-pill.on { opacity: 1; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+    .line-pill.on .pill-label { text-decoration: none; }
+    .pill-swatch { width: 30px; height: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .pill-swatch.dot { width: 11px; height: 11px; border-radius: 50%; }
+    .line-pill.cor   { border-color:#0072B2; color:#0072B2; }
+    .line-pill.cor.on   { background:#0072B2; color:#fff; }
+    .line-pill.cor:hover   { opacity:1; background:#e0f0ff; color:#0072B2; }
+    .line-pill.cor.on:hover   { background:#005fa3; }
+    .line-pill.oor   { border-color:#E69F00; color:#b37a00; }
+    .line-pill.oor.on   { background:#E69F00; color:#fff; }
+    .line-pill.oor:hover   { opacity:1; background:#fff8e0; color:#b37a00; }
+    .line-pill.oor.on:hover   { background:#c98e00; }
+    .line-pill.xuri  { border-color:#CC79A7; color:#a05080; }
+    .line-pill.xuri.on  { background:#CC79A7; color:#fff; }
+    .line-pill.xuri:hover  { opacity:1; background:#fceef6; color:#a05080; }
+    .line-pill.xuri.on:hover  { background:#b86898; }
+    .line-pill.crf   { border-color:#009E73; color:#007a59; }
+    .line-pill.crf.on   { background:#009E73; color:#fff; }
+    .line-pill.crf:hover   { opacity:1; background:#e0f7f0; color:#007a59; }
+    .line-pill.crf.on:hover   { background:#008a64; }
+    .line-pill.mix   { border-color:#27ae60; color:#1e8449; }
+    .line-pill.mix.on   { background:#27ae60; color:#fff; }
+    .line-pill.mix:hover   { opacity:1; background:#eafaf2; color:#1e8449; }
+    .line-pill.mix.on:hover   { background:#229954; }
+    .line-pill.shade { border-color:#7f8c8d; color:#555; }
+    .line-pill.shade.on { background:#7f8c8d; color:#fff; }
+    .line-pill.shade:hover { opacity:1; background:#f2f3f3; color:#555; }
+    .line-pill.shade.on:hover { background:#6d7b7c; }
+    .line-pill.a11y  { border-color:#555; color:#333; }
+    .line-pill.a11y.on  { background:#444; color:#fff; }
+    .line-pill.a11y:hover  { opacity:1; background:#f0f0f0; color:#333; }
+    .line-pill.a11y.on:hover  { background:#333; }
+    #pinch-banner {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 16px; border-radius: 9px; border: 2px solid;
+      margin-bottom: 10px; font-size: 0.8rem; font-weight: 700;
+      transition: border-color 0.3s, background 0.3s;
+    }
+    #pinch-banner .pb-icon  { font-size: 1.1rem; flex-shrink: 0; }
+    #pinch-banner .pb-left  { display: flex; flex-direction: column; flex: 1; gap: 1px; }
+    #pinch-banner .pb-title { font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.9px; opacity: 0.7; }
+    #pinch-banner .pb-name  { font-size: 1rem; font-weight: 800; }
+    #pinch-banner .pb-util  { font-size: 0.72rem; font-weight: 600; opacity: 0.85; }
+    #pinch-banner .pb-badge { font-size: 0.68rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; background: rgba(255,255,255,0.35); border: 1.5px solid rgba(255,255,255,0.5); white-space: nowrap; text-transform: uppercase; }
+    #svg-legend {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      padding: 8px 12px; background: #f9fafb; border-radius: 8px;
+      border: 1px solid #e8edf5; margin-bottom: 8px; align-items: center;
+    }
+    .leg-item { display: flex; align-items: center; gap: 6px; font-size: 0.73rem; font-weight: 600; color: #444; }
+    #all-off-warning {
+      display: none; padding: 8px 14px; background: #fff3cd;
+      border: 1px solid #ffc107; border-radius: 7px;
+      font-size: 0.75rem; font-weight: 600; color: #856404; margin-bottom: 8px;
+    }
+    .zoom-bar {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+      padding: 6px 10px; background: #f9fafb; border-radius: 8px; border: 1px solid #e8edf5;
+      font-size: 0.72rem; color: #666;
+    }
+    .zoom-bar .zoom-label { font-weight: 700; color: #888; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.8px; margin-right: 2px; }
+    .zoom-btn {
+      width: 28px; height: 28px; border-radius: 7px; border: 1.5px solid #cdd4e0;
+      background: #fff; cursor: pointer; font-size: 1rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, border-color 0.15s; color: #444; flex-shrink: 0; padding: 0;
+    }
+    .zoom-btn:hover { background: #e8f0fb; border-color: #0072B2; color: #0072B2; }
+    .zoom-btn:active { transform: scale(0.92); }
+    #zoom-level-display {
+      font-size: 0.75rem; font-weight: 700; color: #0072B2;
+      background: #e0f0ff; padding: 3px 10px; border-radius: 20px; white-space: nowrap;
+    }
+    .zoom-hint { font-size: 0.64rem; color: #aaa; margin-left: 4px; }
+    /* CHANGED: chart-wrap now has explicit height so canvas fills it */
+    .chart-wrap {
+      position: relative; border-radius: 8px; overflow: hidden;
+      border: 1.5px solid #eef0f5; cursor: crosshair; transition: border-color 0.2s;
+      height: 360px;
+    }
+    .chart-wrap:hover  { border-color: #c0cde0; }
+    .chart-wrap.zoomed { cursor: grab; border-color: #0072B2; }
+    #zoom-tooltip {
+      position: absolute; pointer-events: none; z-index: 20;
+      background: rgba(26,60,110,0.88); color: #fff;
+      font-size: 0.68rem; font-weight: 600; padding: 4px 10px;
+      border-radius: 6px; white-space: nowrap; display: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    /* CHANGED: canvas fills the chart-wrap container */
+    #chart_div { width: 100%; height: 100%; display: block; }
+    .util-card {
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07); padding: 14px 18px; flex-shrink: 0;
+    }
+    .util-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:5px; }
+    .util-header h2 { font-size: 0.88rem; }
+    .util-header span { font-size: 0.72rem; color: #888; }
+    .util-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+    .util-row { display:flex; align-items:center; gap:8px; }
+    .util-row .util-lbl { width:80px; font-size:0.72rem; font-weight:600; white-space:nowrap; }
+    .util-bar-bg { flex:1; background:#f0f2f5; border-radius:6px; height:17px; overflow:hidden; position:relative; }
+    .util-bar-fill { height:100%; border-radius:6px; transition:width .4s, background .3s; }
+    .util-bar-text { position:absolute; right:5px; top:50%; transform:translateY(-50%); font-size:0.68rem; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.3); }
+    .util-row .util-pct { width:46px; font-size:0.78rem; font-weight:700; text-align:right; }
+    #toast {
+      position:fixed; bottom:20px; right:20px; background:#e74c3c; color:#fff;
+      padding:9px 16px; border-radius:8px; font-size:0.8rem; font-weight:600;
+      opacity:0; pointer-events:none; transition:opacity .3s; z-index:9999; max-width:300px;
+    }
+    #toast.show { opacity:1; }
+    @media (max-width:900px) {
+      body { overflow:auto; height:auto; }
+      .layout { flex-direction:column; overflow:visible; }
+      .sidebar { width:100%; min-width:unset; border-right:none; border-bottom:1px solid #dde3ec; height:auto; overflow:visible; }
+      .tab-panels { overflow:visible; }
+      .util-bars { grid-template-columns:1fr; }
+      .summary-grid { grid-template-columns:1fr; }
+    }
+  </style>
+   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Multi-Product Capacity Dashboard</h1>
+    <p>Breyanzi &amp; Arlo-cel Resource Allocation</p>
+  </div>
+  <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:6px 14px;text-align:center;font-size:0.75rem;white-space:nowrap;">
+    <div style="font-size:0.65rem;opacity:0.75;margin-bottom:2px;">CURRENT MIX</div>
+    <div id="header-mix" style="font-weight:700;">5 Arlo · 5 Bre</div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <nav class="tab-nav">
+      <button class="tab-btn active"  onclick="switchTab('cor')"     id="tabnav-cor">🔵 COR</button>
+      <button class="tab-btn oor"     onclick="switchTab('oor')"     id="tabnav-oor">🟠 OOR</button>
+      <button class="tab-btn xuri"    onclick="switchTab('xuri')"    id="tabnav-xuri">🟣 Xuri</button>
+      <button class="tab-btn crf"     onclick="switchTab('crf')"     id="tabnav-crf">🟢 CRF</button>
+      <button class="tab-btn"         onclick="switchTab('mix')"     id="tabnav-mix">📍 Mix</button>
+      <button class="tab-btn"         onclick="switchTab('summary')" id="tabnav-summary">📊 KPIs</button>
+    </nav>
+    <div class="tab-panels">
+
+      <!-- COR -->
+      <div class="tab-panel active" id="tab-cor">
+        <div class="section-title">🔵 COR — Closed Operating Room</div>
+        <div class="res-card cor">
+          <div class="res-grid">
+            <div class="input-block"><label>Units / Workstations</label><input type="number" id="cor-units" value="10" min="1" max="99" step="1" oninput="validateWhole(this);drawChart()"><div class="unit">count</div></div>
+            <div class="input-block"><label>Shift Length</label><input type="number" id="cor-shift" value="18" min="1" max="24" step="0.5" oninput="validatePos(this);drawChart()"><div class="unit">hrs / day</div></div>
+            <div class="input-block"><label>Arlo Time / Lot</label><input type="number" id="cor-arlo" value="19.8" min="0.1" max="9999" step="0.1" oninput="validatePos(this);drawChart()"><div class="unit">hrs / lot</div></div>
+            <div class="input-block"><label>Breyanzi Time / Lot</label><input type="number" id="cor-bre" value="6.5" min="0.1" max="9999" step="0.1" oninput="validatePos(this);drawChart()"><div class="unit">hrs / lot</div></div>
+          </div>
+          <div class="range-section">
+            <div class="range-section-title">Compare Unit Range</div>
+            <div class="res-grid">
+              <div class="input-block"><label>Min Units</label><input type="number" id="cor-units-min" value="10" min="1" max="99" step="1" oninput="validateWhole(this);drawChart()"><div class="unit">count</div></div>
+              <div class="input-block"><label>Max Units</label><input type="number" id="cor-units-max" value="10" min="1" max="99" step="1" oninput="validateWhole(this);drawChart()"><div class="unit">count</div></div>
+            </div>
+            <div class="range-hint">Set Min &lt; Max to overlay multiple lines (e.g. 10–12 = 3 lines). Capped at +9.</div>
+          </div>
+          <div class="util-limit-row cor">
+            <label>Utilization Limit <span class="util-limit-val" id="cor-util-lbl">85%</span></label>
+            <input type="range" id="cor-util" min="50" max="100" value="85" step="5" oninput="document.getElementById('cor-util-lbl').textContent=this.value+'%';drawChart()">
+            <div class="slider-end-labels"><span>50%</span><span>100%</span></div>
+          </div>
+        </div>
+        <div class="res-kpi-row">
+          <div class="res-kpi" style="border-top:3px solid #0072B2"><div class="rk-val cor-text" id="kpi-cor-arlo">—</div><div class="rk-lbl">Max Arlo</div></div>
+          <div class="res-kpi" style="border-top:3px solid #0072B2"><div class="rk-val cor-text" id="kpi-cor-bre">—</div><div class="rk-lbl">Max Bre</div></div>
+          <div class="res-kpi" style="border-top:3px solid #0072B2"><div class="rk-val cor-text" id="kpi-cor-util">—</div><div class="rk-lbl">Util @ Mix</div></div>
+        </div>
+        <div style="margin-top:12px"><div class="equation-box"><div class="eq">Avail = N × 7 × Shift × Util%</div>Capacity: <span style="font-family:monospace;font-size:0.77rem;color:#0072B2;">A·t_A + B·t_B ≤ Avail</span></div></div>
+      </div>
+
+      <!-- OOR -->
+      <div class="tab-panel" id="tab-oor">
+        <div class="section-title">🟠 OOR — Open Operating Room</div>
+        <div class="res-card oor">
+          <div class="res-grid">
+            <div class="input-block"><label>Units / Workstations</label><input type="number" id="oor-units" value="6" min="1" max="99" step="1" oninput="validateWhole(this);drawChart()"><div class="unit">count</div></div>
+            <div class="input-block"><label>Shift Length</label><input type="number" id="oor-shift" value="18" min="1" max="24" step="0.5" oninput="validatePos(this);drawChart()"><div class="unit">hrs / day</div></div>
+            <div class="input-block"><label>Arlo Time / Lot</label><input type="number" id="oor-arlo" value="4.2" min="0.1" max="9999" step="0.1" oninput="validatePos(this);drawChart()"><div class="unit">hrs / lot</div></div>
+            <div class="input-block"><label>Breyanzi Time / Lot</label><input type="number" id="oor-bre" value="6.5" min="0.1" max="9999" step="0.1" oninput="validatePos(this);drawChart()"><div class="unit">hrs / lot</div></div>
+          </div>
+          <div class="range-section">
+            <div class="range-section-title">Compare Unit Range</div>
+            <div class="res-grid">
+              <div class="input-block"><label>Min Units</label><input type="number" id="oor-units-min" value="6" min="1" max="99" step="1" oninput="validateWhole(this);drawChart()"><div class="unit">count</div></div>
+              <div class="input-block"><label>Max Units</label><input type="number" id="oor-units-max" value="6" min="1" max="99" step="1" oninput="validateWhole(this);drawChart()"><div class="unit">count</div></div>
+            </div>
+            <div class="range-hint">Set Min &lt; Max to overlay multiple lines (e.g. 6–8 = 3 lines). Capped at +9.</div>
+          </div>
+          <div class="util-limit-row oor">
+            <label>Utilization Limit <span class="util-limit-val" id="oor-util-lbl">85%</span></label>
+            <input type="range" id="oor-util" min="50" max="100" value="85" step="5" oninput="document.getElementById('oor-util-lbl').textContent=this.value+'%';drawChart()">
+            <div class="slider-end-labels"><span>50%</span><span>100%</span></div>
+          </div>
+        </div>
+        <div class="res-kpi-row">
+          <div class="res-kpi" style="border-top:3px solid #E69F00"><div class="rk-val oor-text" id="kpi-oor-arlo">—</div><div class="rk-lbl">Max Arlo</div></div>
+          <div class="res-kpi" style="border-top:3px solid #E69F00"><div class="rk-val oor-text" id="kpi-oor-bre">—</div><div class="rk-lbl">Max Bre</div></div>
+          <div class="res-kpi" style="border-top:3px solid #E69F00"><div class="rk-val oor-text" id="kpi-oor-util">—</div><div class="rk-lbl">Util @ Mix</div></div>
+        </div>
+        <div style="margin-top:12px"><div class="equation-box"><div class="eq">Avail = N × 7 × Shift × Util%</div>Capacity: <span style="font-family:monospace;font-size:0.77rem;color:#E69F00;">A·t_A + B·t_B ≤ Avail</span></div></div>
+      </div>
+
+      <!-- XURI -->
+      <div class="tab-panel" id="tab-xuri">
+        <div class="section-title">🟣 Xuri Bioreactor</div>
+        <div class="res-card xuri">
+          <div class="res-grid">
+            <div class="input-block"><label>Units Available</label><input type="number" id="xuri-units" value="72" min="1" max="999" step="1" oninput="validateWhole(this);drawChart()"><div class="unit">count</div></div>
+            <div class="input-block"><label>Shift Length</label><input type="number" id="xuri-shift" value="24" min="1" max="24" step="0.5" oninput="validatePos(this);drawChart()"><div class="unit">hrs / day</div></div>
+            <div class="input-block"><label>Arlo Time / Lot</label><input type="number" id="xuri-arlo" value="130.16" min="0.1" max="9999" step="0.01" oninput="validatePos(this);drawChart()"><div class="unit">hrs / lot</div></div>
+            <div class="input-block"><label>Breyanzi Time / Lot</label><input type="number" id="xuri-bre" value="144" min="0.1" max="9999" step="0.01" oninput="validatePos(this);drawChart()"><div class="unit">hrs / lot</div></div>
+          </div>
+          <div class="range-section">
+            <div class="range-section-title">Compare Unit Range</div>
+            <div class="res-grid">
+              <div class="input-block"><label>Min Units</label><input type="number" id="xuri-units-min" value="72" min="1" max="999" step="1" oninput="validateWhole(this);drawChart()"><div class="unit">count</div></div>
+              <div class="input-block"><label>Max Units</label><input type="number" id="xuri-units-max" value="72" min="1" max="999" step="1" oninput="validateWhole(this);drawChart()"><div class="unit">count</div></div>
+            </div>
+            <div class="range-hint">Set Min &lt; Max to overlay multiple lines (e.g. 72–74 = 3 lines). Capped at +9.</div>
+          </div>
+          <div class="util-limit-row xuri">
+            <label>Utilization Limit <span class="util-limit-val" id="xuri-util-lbl">90%</span></label>
+            <input type="range" id="xuri-util" min="50" max="100" value="90" step="5" oninput="document.getElementById('xuri-util-lbl').textContent=this.value+'%';drawChart()">
+            <div class="slider-end-labels"><span>50%</span><span>100%</span></div>
+          </div>
+        </div>
+        <div class="res-kpi-row">
+          <div class="res-kpi" style="border-top:3px solid #CC79A7"><div class="rk-val xuri-text" id="kpi-xuri-arlo">—</div><div class="rk-lbl">Max Arlo</div></div>
+          <div class="res-kpi" style="border-top:3px solid #CC79A7"><div class="rk-val xuri-text" id="kpi-xuri-bre">—</div><div class="rk-lbl">Max Bre</div></div>
+          <div class="res-kpi" style="border-top:3px solid #CC79A7"><div class="rk-val xuri-text" id="kpi-xuri-util">—</div><div class="rk-lbl">Util @ Mix</div></div>
+        </div>
+        <div style="margin-top:12px"><div class="equation-box"><div class="eq">Avail = N × 7 × Shift × Util%</div>Capacity: <span style="font-family:monospace;font-size:0.77rem;color:#CC79A7;">A·t_A + B·t_B ≤ Avail</span></div></div>
+      </div>
+
+      <!-- CRF -->
+      <div class="tab-panel" id="tab-crf">
+        <div class="section-title">🟢 CRF — Controlled Rate Freezer</div>
+        <div class="res-card crf">
+          <div class="res-grid">
+            <div class="input-block"><label>Units Available</label><input type="number" id="crf-units" value="6" min="1" max="999" step="1" oninput="validateWhole(this);drawChart()"><div class="unit">count</div></div>
+            <div class="input-block"><label>Shift Length</label><input type="number" id="crf-shift" value="18" min="1" max="24" step="0.5" oninput="validatePos(this);drawChart()"><div class="unit">hrs / day</div></div>
+            <div class="input-block"><label>Arlo Time / Lot</label><input type="number" id="crf-arlo" value="5" min="0.1" max="9999" step="0.1" oninput="validatePos(this);drawChart()"><div class="unit">hrs / lot</div></div>
+            <div class="input-block"><label>Breyanzi Time / Lot</label><input type="number" id="crf-bre" value="3.75" min="0.1" max="9999" step="0.05" oninput="validatePos(this);drawChart()"><div class="unit">hrs / lot</div></div>
+          </div>
+          <div class="range-section">
+            <div class="range-section-title">Compare Unit Range</div>
+            <div class="res-grid">
+              <div class="input-block"><label>Min Units</label><input type="number" id="crf-units-min" value="6" min="1" max="999" step="1" oninput="validateWhole(this);drawChart()"><div class="unit">count</div></div>
+              <div class="input-block"><label>Max Units</label><input type="number" id="crf-units-max" value="6" min="1" max="999" step="1" oninput="validateWhole(this);drawChart()"><div class="unit">count</div></div>
+            </div>
+            <div class="range-hint">Set Min &lt; Max to overlay multiple lines (e.g. 6–8 = 3 lines). Capped at +9.</div>
+          </div>
+          <div class="util-limit-row crf">
+            <label>Utilization Limit <span class="util-limit-val" id="crf-util-lbl">85%</span></label>
+            <input type="range" id="crf-util" min="50" max="100" value="85" step="5" oninput="document.getElementById('crf-util-lbl').textContent=this.value+'%';drawChart()">
+            <div class="slider-end-labels"><span>50%</span><span>100%</span></div>
+          </div>
+        </div>
+        <div class="res-kpi-row">
+          <div class="res-kpi" style="border-top:3px solid #009E73"><div class="rk-val crf-text" id="kpi-crf-arlo">—</div><div class="rk-lbl">Max Arlo</div></div>
+          <div class="res-kpi" style="border-top:3px solid #009E73"><div class="rk-val crf-text" id="kpi-crf-bre">—</div><div class="rk-lbl">Max Bre</div></div>
+          <div class="res-kpi" style="border-top:3px solid #009E73"><div class="rk-val crf-text" id="kpi-crf-util">—</div><div class="rk-lbl">Util @ Mix</div></div>
+        </div>
+        <div style="margin-top:12px"><div class="equation-box"><div class="eq">Avail = N × 7 × Shift × Util%</div>Capacity: <span style="font-family:monospace;font-size:0.77rem;color:#009E73;">A·t_A + B·t_B ≤ Avail</span></div></div>
+      </div>
+
+      <!-- MIX -->
+      <div class="tab-panel" id="tab-mix">
+        <div class="section-title">📍 Current Production Mix</div>
+        <div class="slider-wrap">
+          <label>Arlo-cel lots / week: <strong id="arlo-val-lbl">5</strong></label>
+          <input type="range" id="arlo-slider" min="0" max="100" value="5" step="1" oninput="onSlider()">
+          <div class="slider-labels"><span>0</span><span id="arlo-max-lbl">100</span></div>
+        </div>
+        <div class="slider-wrap">
+          <label>Breyanzi lots / week: <strong id="bre-val-lbl">5</strong></label>
+          <input type="range" id="bre-slider" min="0" max="200" value="5" step="1" oninput="onSlider()">
+          <div class="slider-labels"><span>0</span><span id="bre-max-lbl">200</span></div>
+        </div>
+        <div class="mix-display" id="mix-display">Mix: 5 Arlo + 5 Breyanzi</div>
+        <div style="margin-top:14px">
+          <div class="section-title">🚨 Bottleneck @ This Mix</div>
+          <div class="bottleneck-box">
+            <div class="bn-title">All Resources — Ranked by Utilization</div>
+            <div id="bn-list">—</div>
+          </div>
+          <div class="binding-label" id="binding-label" style="margin-top:7px;"></div>
+        </div>
+      </div>
+
+      <!-- SUMMARY -->
+      <div class="tab-panel" id="tab-summary">
+        <div class="section-title">📊 Capacity Summary</div>
+        <div class="summary-grid">
+          <div class="sum-card" style="border-top:3px solid #0072B2"><div class="sum-card-header" style="color:#0072B2">🔵 COR</div><div class="sum-row"><span class="lbl">Max Arlo</span><span class="val cor-text" id="sum-cor-arlo">—</span></div><div class="sum-row"><span class="lbl">Max Bre</span><span class="val cor-text" id="sum-cor-bre">—</span></div><div class="sum-row"><span class="lbl">Util @ Mix</span><span class="val cor-text" id="sum-cor-util">—</span></div></div>
+          <div class="sum-card" style="border-top:3px solid #E69F00"><div class="sum-card-header" style="color:#b37a00">🟠 OOR</div><div class="sum-row"><span class="lbl">Max Arlo</span><span class="val oor-text" id="sum-oor-arlo">—</span></div><div class="sum-row"><span class="lbl">Max Bre</span><span class="val oor-text" id="sum-oor-bre">—</span></div><div class="sum-row"><span class="lbl">Util @ Mix</span><span class="val oor-text" id="sum-oor-util">—</span></div></div>
+          <div class="sum-card" style="border-top:3px solid #CC79A7"><div class="sum-card-header" style="color:#a05080">🟣 Xuri</div><div class="sum-row"><span class="lbl">Max Arlo</span><span class="val xuri-text" id="sum-xuri-arlo">—</span></div><div class="sum-row"><span class="lbl">Max Bre</span><span class="val xuri-text" id="sum-xuri-bre">—</span></div><div class="sum-row"><span class="lbl">Util @ Mix</span><span class="val xuri-text" id="sum-xuri-util">—</span></div></div>
+          <div class="sum-card" style="border-top:3px solid #009E73"><div class="sum-card-header" style="color:#007a59">🟢 CRF</div><div class="sum-row"><span class="lbl">Max Arlo</span><span class="val crf-text" id="sum-crf-arlo">—</span></div><div class="sum-row"><span class="lbl">Max Bre</span><span class="val crf-text" id="sum-crf-bre">—</span></div><div class="sum-row"><span class="lbl">Util @ Mix</span><span class="val crf-text" id="sum-crf-util">—</span></div></div>
+        </div>
+        <div class="section-title">📐 Axis Intercepts (lots/wk)</div>
+        <table class="intercept-table">
+          <thead><tr><th>Resource</th><th>Max Arlo (Bre=0)</th><th>Max Bre (Arlo=0)</th></tr></thead>
+          <tbody>
+            <tr><td class="cor-text">🔵 COR</td><td class="cor-text" id="sint-cor-arlo">—</td><td class="cor-text" id="sint-cor-bre">—</td></tr>
+            <tr><td class="oor-text">🟠 OOR</td><td class="oor-text" id="sint-oor-arlo">—</td><td class="oor-text" id="sint-oor-bre">—</td></tr>
+            <tr><td class="xuri-text">🟣 Xuri</td><td class="xuri-text" id="sint-xuri-arlo">—</td><td class="xuri-text" id="sint-xuri-bre">—</td></tr>
+            <tr><td class="crf-text">🟢 CRF</td><td class="crf-text" id="sint-crf-arlo">—</td><td class="crf-text" id="sint-crf-bre">—</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:8px"><div class="equation-box"><div class="eq">TotalAvail = N × 7 × Shift × Util%</div><div class="eq">% Util = (A·t_A + B·t_B) / TotalAvail</div><br><b>Feasible region</b> = below <em>all</em> active constraint lines</div></div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="chart-card">
+      <h2>Weekly Production Capacity</h2>
+
+      <div class="line-toggle-bar">
+        <span class="bar-label">Lines:</span>
+        <div class="line-pill cor on"  id="pill-cor"   onclick="togglePill('cor')"   title="Toggle COR"><div class="pill-swatch" id="ps-cor"></div><span class="pill-label">COR</span></div>
+        <div class="line-pill oor on"  id="pill-oor"   onclick="togglePill('oor')"   title="Toggle OOR"><div class="pill-swatch" id="ps-oor"></div><span class="pill-label">OOR</span></div>
+        <div class="line-pill xuri on" id="pill-xuri"  onclick="togglePill('xuri')"  title="Toggle Xuri"><div class="pill-swatch" id="ps-xuri"></div><span class="pill-label">Xuri</span></div>
+        <div class="line-pill crf on"  id="pill-crf"   onclick="togglePill('crf')"   title="Toggle CRF"><div class="pill-swatch" id="ps-crf"></div><span class="pill-label">CRF</span></div>
+        <div class="pill-divider"></div>
+        <div class="line-pill mix on"   id="pill-point" onclick="togglePill('point')" title="Mix point">
+          <div class="pill-swatch dot" style="background:#27ae60;width:11px;height:11px;border-radius:50%;"></div>
+          <span class="pill-label">Mix Point</span>
+        </div>
+        <div class="line-pill shade on" id="pill-shade" onclick="togglePill('shade')" title="Shading">
+          <div class="pill-swatch" style="background:linear-gradient(180deg,rgba(80,80,180,0.4) 0%,rgba(80,80,180,0.05) 100%);border-radius:2px;height:11px;width:22px;"></div>
+          <span class="pill-label">Shading</span>
+        </div>
+        <div class="line-pill a11y on"  id="pill-a11y"  onclick="togglePill('a11y')"  title="Shape markers">
+          <svg width="18" height="14" viewBox="0 0 18 14"><circle cx="3" cy="7" r="3" fill="currentColor"/><rect x="7" y="4" width="6" height="6" fill="currentColor"/><polygon points="17,7 14,2 14,12" fill="currentColor"/></svg>
+          <span class="pill-label">Markers</span>
+        </div>
+        <div class="pill-divider"></div>
+        <button onclick="setAllLines(true)"  style="font-size:0.68rem;padding:4px 10px;border-radius:20px;border:1.5px solid #bbb;background:#fff;color:#555;cursor:pointer;font-weight:600;">All</button>
+        <button onclick="setAllLines(false)" style="font-size:0.68rem;padding:4px 10px;border-radius:20px;border:1.5px solid #bbb;background:#fff;color:#555;cursor:pointer;font-weight:600;">None</button>
+      </div>
+
+      <div id="pinch-banner">
+        <span class="pb-icon">⚡</span>
+        <div class="pb-left">
+          <span class="pb-title">Pinch Point — Most Restrictive Constraint</span>
+          <span class="pb-name" id="pb-name">—</span>
+          <span class="pb-util" id="pb-util">—</span>
+        </div>
+        <div id="pb-swatch" style="width:48px;height:16px;flex-shrink:0;margin-left:4px;"></div>
+        <span class="pb-badge" id="pb-badge">—</span>
+      </div>
+
+      <div id="svg-legend"></div>
+      <div id="all-off-warning">⚠️ All constraint lines are hidden — toggle one or more on to see the chart.</div>
+
+      <div class="zoom-bar">
+        <span class="zoom-label">Zoom:</span>
+        <button class="zoom-btn" onclick="stepZoom(1.4)"   title="Zoom in">+</button>
+        <button class="zoom-btn" onclick="stepZoom(1/1.4)" title="Zoom out">−</button>
+        <button class="zoom-btn" onclick="resetZoom()"     title="Reset" style="font-size:0.72rem;width:auto;padding:0 8px;">Reset</button>
+        <span id="zoom-level-display">100%</span>
+        <span class="zoom-hint">· Scroll over chart to zoom · Drag to pan</span>
+      </div>
+
+      <div class="chart-wrap" id="chart-wrap">
+        <div id="zoom-tooltip"></div>
+        <!-- CHANGED: canvas instead of div -->
+        <canvas id="chart_div"></canvas>
+      </div>
+    </div>
+
+    <div class="util-card">
+      <div class="util-header">
+        <h2>Per-Resource Utilization at Current Mix</h2>
+        <span>🔴 &gt;100% over &nbsp;|&nbsp; 🟡 80–100% warn &nbsp;|&nbsp; 🟢 &lt;80% OK</span>
+      </div>
+      <div class="util-bars" id="util-bars"></div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── RESOURCES
+// pointShape  = used by SVG legend drawing
+// cjsShape    = used by Chart.js (rect=square, rectRot=diamond)
+const RESOURCES = [
+  { id:'cor',  label:'COR',  color:'#0072B2', emoji:'🔵', dash:null,   pointShape:'circle',   cjsShape:'circle',   lineWidth:3   },
+  { id:'oor',  label:'OOR',  color:'#E69F00', emoji:'🟠', dash:[10,4], pointShape:'square',   cjsShape:'rect',     lineWidth:2.5 },
+  { id:'xuri', label:'Xuri', color:'#CC79A7', emoji:'🟣', dash:[4,4],  pointShape:'diamond',  cjsShape:'rectRot',  lineWidth:2.5 },
+  { id:'crf',  label:'CRF',  color:'#009E73', emoji:'🟢', dash:[2,5],  pointShape:'triangle', cjsShape:'triangle', lineWidth:2.5 },
+];
+
+// ── HELPERS
+function hexAlpha(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function shapeSVG(shape, color, size=10) {
+  const h=size, h2=size/2;
+  switch(shape) {
+    case 'circle':   return `<circle cx="${h2}" cy="${h2}" r="${h2*0.85}" fill="${color}"/>`;
+    case 'square':   return `<rect x="1" y="1" width="${h-2}" height="${h-2}" fill="${color}"/>`;
+    case 'diamond':  return `<polygon points="${h2},1 ${h-1},${h2} ${h2},${h-1} 1,${h2}" fill="${color}"/>`;
+    case 'triangle': return `<polygon points="${h2},1 ${h-1},${h-1} 1,${h-1}" fill="${color}"/>`;
+    default:         return `<circle cx="${h2}" cy="${h2}" r="${h2*0.85}" fill="${color}"/>`;
+  }
+}
+
+function legendLineSVG(r, w=46, h=16, isBinding=false) {
+  const y=h/2, lw=isBinding?4:2.5;
+  const da=r.dash?`stroke-dasharray="${r.dash.join(' ')}"`: '';
+  const ms=10, tx=w/2-ms/2, ty=y-ms/2;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+    <line x1="2" y1="${y}" x2="${w-2}" y2="${y}" stroke="${r.color}" stroke-width="${lw}" ${da}/>
+    <g transform="translate(${tx},${ty})">${shapeSVG(r.pointShape,r.color,ms)}</g>
+  </svg>`;
+}
+
+// ── STATE
+const flags = { cor:true, oor:true, xuri:true, crf:true, point:true, shade:true, a11y:true };
+let zoom = { xMin:null, xMax:null, yMin:null, yMax:null, level:1 };
+let globalAxisCache = { maxArlo:1, maxBre:1 };
+let isPanning=false, panStart=null, panAnchor=null;
+let chart = null;
+
+// ── INIT — no google.charts callback needed
+function init() {
+  buildPillSwatches();
+  setupZoomPan();
+  drawChart();
+}
+document.addEventListener('DOMContentLoaded', init);
+
+function buildPillSwatches() {
+  RESOURCES.forEach(r => {
+    const el = document.getElementById('ps-' + r.id);
+    if (el) el.innerHTML = legendLineSVG(r, 30, 14);
+  });
+}
+
+// ── TOGGLES
+function togglePill(key) {
+  flags[key] = !flags[key];
+  document.getElementById('pill-' + key).classList.toggle('on', flags[key]);
+  drawChart();
+}
+function setAllLines(onOff) {
+  ['cor','oor','xuri','crf'].forEach(k => {
+    flags[k] = onOff;
+    document.getElementById('pill-' + k).classList.toggle('on', onOff);
+  });
+  drawChart();
+}
+
+// ── TAB
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.getElementById('tabnav-' + id).classList.add('active');
+}
+
+// ── SLIDERS
+function onSlider() {
+  const a = parseInt(document.getElementById('arlo-slider').value);
+  const b = parseInt(document.getElementById('bre-slider').value);
+  document.getElementById('arlo-val-lbl').textContent = a;
+  document.getElementById('bre-val-lbl').textContent  = b;
+  document.getElementById('mix-display').textContent  = `Mix: ${a} Arlo + ${b} Breyanzi`;
+  document.getElementById('header-mix').textContent   = `${a} Arlo · ${b} Bre`;
+  drawChart();
+}
+
+// ── MATH
+function getResource(id) {
+  const units = parseFloat(document.getElementById(`${id}-units`).value) || 1;
+  const shift = parseFloat(document.getElementById(`${id}-shift`).value) || 18;
+  const arlo  = parseFloat(document.getElementById(`${id}-arlo`).value)  || 1;
+  const bre   = parseFloat(document.getElementById(`${id}-bre`).value)   || 1;
+  const util  = parseFloat(document.getElementById(`${id}-util`).value)  / 100 || 0.85;
+  return { id, units, shift, arlo, bre, util, totalAvail: units * 7 * shift * util };
+}
+
+function getResourceVariants(def) {
+  const base     = getResource(def.id);
+  const minUnits = parseInt(document.getElementById(`${def.id}-units-min`).value) || base.units;
+  const maxUnits = parseInt(document.getElementById(`${def.id}-units-max`).value) || base.units;
+  const lo = Math.min(minUnits, maxUnits);
+  const hi = Math.min(Math.max(minUnits, maxUnits), lo + 9);
+  const variants = [];
+  for (let u = lo; u <= hi; u++) {
+    const isMain = (u === base.units);
+    variants.push({
+      ...def,
+      ...base,
+      units:      u,
+      totalAvail: u * 7 * base.shift * base.util,
+      isMain,
+      variantKey: `${def.id}_u${u}`,
+      variantUnits: u,
+      lineWidth:  isMain ? (def.lineWidth + 1) : 1.5,
+      opacity:    isMain ? 1.0 : 0.4,
+      dash:       isMain ? def.dash : [4, 4],
+      label: isMain ? def.label : `${def.label} (${u})`,
+    });
+  }
+  return variants;
+}
+
+function getIntercepts(r) { return { maxArlo: r.totalAvail/r.arlo, maxBre: r.totalAvail/r.bre }; }
+function getUtil(r, a, b) { return (a*r.arlo + b*r.bre) / r.totalAvail; }
+function lineY(x, r) {
+  const y = (r.totalAvail - x*r.arlo) / r.bre;
+  return y >= -0.001 ? Math.max(0, y) : null;
+}
+
+// ── ZOOM / PAN
+function setupZoomPan() {
+  const wrap = document.getElementById('chart-wrap');
+  const tip  = document.getElementById('zoom-tooltip');
+
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.25 : 1/1.25;
+    const rect = wrap.getBoundingClientRect();
+    zoomAroundPoint(factor,
+      Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)),
+      Math.max(0, Math.min(1, (e.clientY - rect.top)  / rect.height))
+    );
+  }, { passive: false });
+
+  wrap.addEventListener('mousemove', e => {
+    const rect = wrap.getBoundingClientRect();
+    tip.style.left = (e.clientX - rect.left + 12) + 'px';
+    tip.style.top  = (e.clientY - rect.top  - 28) + 'px';
+  });
+  wrap.addEventListener('mouseenter', () => { tip.style.display = 'block'; });
+  wrap.addEventListener('mouseleave', () => { tip.style.display = 'none'; isPanning = false; });
+
+  wrap.addEventListener('mousedown', e => {
+    if (zoom.level <= 1) return;
+    isPanning = true;
+    panStart  = { x: e.clientX, y: e.clientY };
+    panAnchor = { xMin:zoom.xMin, xMax:zoom.xMax, yMin:zoom.yMin, yMax:zoom.yMax };
+    wrap.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e => {
+    if (!isPanning) return;
+    const rect   = document.getElementById('chart-wrap').getBoundingClientRect();
+    const xRange = panAnchor.xMax - panAnchor.xMin;
+    const yRange = panAnchor.yMax - panAnchor.yMin;
+    const dx = -(e.clientX - panStart.x) / rect.width  * xRange;
+    const dy =  (e.clientY - panStart.y) / rect.height * yRange;
+    zoom.xMin = Math.max(0, panAnchor.xMin + dx);
+    zoom.xMax = Math.min(globalAxisCache.maxArlo*1.15, zoom.xMin + xRange);
+    zoom.xMin = zoom.xMax - xRange;
+    zoom.yMin = Math.max(0, panAnchor.yMin + dy);
+    zoom.yMax = Math.min(globalAxisCache.maxBre*1.15, zoom.yMin + yRange);
+    zoom.yMin = zoom.yMax - yRange;
+    applyZoomToChart();
+  });
+  window.addEventListener('mouseup', () => {
+    isPanning = false;
+    const w = document.getElementById('chart-wrap');
+    if (w) w.style.cursor = zoom.level > 1 ? 'grab' : 'crosshair';
+  });
+}
+
+function applyZoomToChart() {
+  if (!chart) return;
+  const axMaxArlo = globalAxisCache.maxArlo * 1.15;
+  const axMaxBre  = globalAxisCache.maxBre  * 1.15;
+  chart.options.scales.x.min = zoom.xMin ?? 0;
+  chart.options.scales.x.max = zoom.xMax ?? axMaxArlo;
+  chart.options.scales.y.min = zoom.yMin ?? 0;
+  chart.options.scales.y.max = zoom.yMax ?? axMaxBre;
+  chart.update('none');
+}
+
+function zoomAroundPoint(factor, fx, fy) {
+  const axMaxArlo = globalAxisCache.maxArlo * 1.15;
+  const axMaxBre  = globalAxisCache.maxBre  * 1.15;
+  const curXMin = zoom.xMin ?? 0, curXMax = zoom.xMax ?? axMaxArlo;
+  const curYMin = zoom.yMin ?? 0, curYMax = zoom.yMax ?? axMaxBre;
+  const xRange = curXMax - curXMin, yRange = curYMax - curYMin;
+  const pivX = curXMin + fx * xRange, pivY = curYMin + (1-fy) * yRange;
+  const nxr = Math.min(axMaxArlo, Math.max(axMaxArlo/50, xRange/factor));
+  const nyr = Math.min(axMaxBre,  Math.max(axMaxBre/50,  yRange/factor));
+  zoom.xMin = Math.max(0, pivX - fx * nxr);
+  zoom.xMax = Math.min(axMaxArlo, zoom.xMin + nxr);
+  zoom.xMin = zoom.xMax - nxr;
+  zoom.yMin = Math.max(0, pivY - (1-fy) * nyr);
+  zoom.yMax = Math.min(axMaxBre, zoom.yMin + nyr);
+  zoom.yMin = zoom.yMax - nyr;
+  zoom.level = axMaxArlo / nxr;
+  updateZoomUI();
+  applyZoomToChart();
+}
+function stepZoom(f) { zoomAroundPoint(f, 0.5, 0.5); }
+function resetZoom() {
+  zoom = { xMin:null, xMax:null, yMin:null, yMax:null, level:1 };
+  updateZoomUI();
+  drawChart();
+}
+function updateZoomUI() {
+  document.getElementById('zoom-level-display').textContent = Math.round(zoom.level*100) + '%';
+  const w = document.getElementById('chart-wrap');
+  w.classList.toggle('zoomed', zoom.level > 1.05);
+  w.style.cursor = zoom.level > 1.05 ? 'grab' : 'crosshair';
+  document.getElementById('zoom-tooltip').textContent;
+}
+
+// ── PINCH BANNER
+function updatePinchBanner(bindRes, bindingUtil) {
+  const banner = document.getElementById('pinch-banner');
+  const pct = (bindingUtil*100).toFixed(1);
+  const isOver = bindingUtil>1, isWarn = bindingUtil>0.8;
+  banner.style.borderColor = bindRes.color;
+  banner.style.background  = bindRes.color + '18';
+  banner.style.color       = bindRes.color;
+  document.getElementById('pb-name').textContent = `${bindRes.emoji} ${bindRes.label}`;
+  document.getElementById('pb-name').style.color = bindRes.color;
+  document.getElementById('pb-util').textContent = `${pct}% utilization at current mix`;
+  document.getElementById('pb-util').style.color = isOver?'#c0392b':isWarn?'#d35400':'#1e8449';
+  document.getElementById('pb-badge').textContent = isOver?'🔴 OVER CAPACITY':isWarn?'🟡 WARNING':'🟢 OK';
+  document.getElementById('pb-swatch').innerHTML = legendLineSVG(bindRes, 48, 16, true);
+}
+
+// ── SVG LEGEND
+function updateSVGLegend(allVariants, bindingId) {
+  const container = document.getElementById('svg-legend');
+  const vis = allVariants.filter(r => flags[r.id]);
+  if (vis.length === 0) { container.style.display='none'; return; }
+  container.style.display = 'flex';
+  container.innerHTML = vis.map(r => {
+    const isB = r.id === bindingId && r.isMain;
+    return `<div class="leg-item" style="opacity:${r.opacity ?? 1}">
+      ${legendLineSVG(r, 46, 16, isB)}
+      <span style="color:${r.color};font-weight:${isB?800:600}">${r.label}${isB?' ⚡':''}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── MAIN DRAW (Chart.js)
+function drawChart(fastRedraw=false) {
+  const allVariants    = RESOURCES.flatMap(def => getResourceVariants(def));
+  const mainResources  = allVariants.filter(r => r.isMain);
+  const arloLots       = parseInt(document.getElementById('arlo-slider').value) || 0;
+  const breLots        = parseInt(document.getElementById('bre-slider').value)  || 0;
+  const visibleVariants= allVariants.filter(r => flags[r.id]);
+
+  document.getElementById('all-off-warning').style.display = visibleVariants.length===0?'block':'none';
+
+  const allIntercepts  = allVariants.map(r => getIntercepts(r));
+  const globalMaxArlo  = Math.max(...allIntercepts.map(r => r.maxArlo));
+  const globalMaxBre   = Math.max(...allIntercepts.map(r => r.maxBre));
+  const axMaxArlo      = Math.ceil(globalMaxArlo * 1.15);
+  const axMaxBre       = Math.ceil(globalMaxBre  * 1.15);
+  globalAxisCache      = { maxArlo: globalMaxArlo, maxBre: globalMaxBre };
+
+  document.getElementById('arlo-slider').max = axMaxArlo;
+  document.getElementById('bre-slider').max  = axMaxBre;
+  document.getElementById('arlo-max-lbl').textContent = axMaxArlo;
+  document.getElementById('bre-max-lbl').textContent  = axMaxBre;
+
+  const visXMin = zoom.xMin ?? 0, visXMax = zoom.xMax ?? axMaxArlo;
+  const visYMin = zoom.yMin ?? 0, visYMax = zoom.yMax ?? axMaxBre;
+
+  const utils      = mainResources.map(r => ({ id:r.id, util:getUtil(r,arloLots,breLots) }));
+  const bindingId  = utils.reduce((a,b) => a.util>b.util?a:b).id;
+  const bindRes    = mainResources.find(r => r.id===bindingId);
+  const bindingUtil= utils.find(u => u.id===bindingId).util;
+
+  updatePinchBanner(bindRes, bindingUtil);
+  updateSVGLegend(visibleVariants, bindingId);
+
+  // Build Chart.js datasets
+  const STEPS = 300;
+  const datasets = [];
+
+  visibleVariants.forEach(r => {
+    const maxA     = getIntercepts(r).maxArlo;
+    const isBinding= r.id === bindingId && r.isMain;
+    const op       = r.opacity ?? 1;
+    const lw       = isBinding ? r.lineWidth + 2 : r.lineWidth;
+
+    // Build line points
+    const pts = [];
+    for (let i = 0; i <= STEPS; i++) {
+      const x = maxA * i / STEPS;
+      const y = lineY(x, r);
+      if (y !== null) pts.push({ x, y });
+    }
+
+    // 1. Shading (fill below line to x-axis)
+    if (flags.shade) {
+      datasets.push({
+        type: 'line',
+        label: r.variantKey + '_shade',
+        data: pts,
+        borderColor: 'transparent',
+        backgroundColor: hexAlpha(r.color, isBinding ? 0.13*op : 0.06*op),
+        borderWidth: 0,
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        fill: 'origin',
+        tension: 0,
+        order: 10,
+      });
+    }
+
+    // 2. Constraint line
+    datasets.push({
+      type: 'line',
+      label: r.label,
+      data: pts,
+      borderColor: hexAlpha(r.color, op),
+      borderWidth: lw,
+      borderDash: r.dash || [],
+      backgroundColor: 'transparent',
+      pointRadius: 0,
+      pointHoverRadius: 5,
+      fill: false,
+      tension: 0,
+      order: 5,
+    });
+
+    // 3. Accessibility shape markers
+    if (flags.a11y) {
+      const MN = Math.max(6, Math.round(6 * zoom.level));
+      const mkPts = [];
+      for (let i = 0; i <= MN; i++) {
+        const x = maxA * i / MN;
+        const y = lineY(x, r);
+        if (y !== null) mkPts.push({ x, y });
+      }
+      datasets.push({
+        type: 'scatter',
+        label: r.variantKey + '_mk',
+        data: mkPts,
+        backgroundColor: hexAlpha(r.color, op),
+        borderColor: hexAlpha(r.color, op),
+        pointRadius: isBinding ? 7 : 5,
+        pointHoverRadius: isBinding ? 9 : 7,
+        pointStyle: r.cjsShape,
+        order: 3,
+      });
+    }
+  });
+
+  // 4. Mix point
+  if (flags.point) {
+    const overallUtil = Math.max(...utils.map(u => u.util));
+    const mixColor = overallUtil>1?'#e74c3c':overallUtil>0.8?'#e67e22':'#27ae60';
+    datasets.push({
+      type: 'scatter',
+      label: 'Mix Point',
+      data: [{ x: arloLots, y: breLots }],
+      backgroundColor: mixColor,
+      borderColor: '#fff',
+      borderWidth: 2,
+      pointRadius: 10,
+      pointHoverRadius: 12,
+      pointStyle: 'circle',
+      order: 1,
+    });
+  }
+
+  const canvas = document.getElementById('chart_div');
+
+  if (!chart) {
+    // First render — create the Chart.js instance
+    chart = new Chart(canvas, {
+      type: 'scatter',
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            filter: (item) => !item.dataset.label.includes('_'),
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: (${ctx.parsed.x.toFixed(1)}, ${ctx.parsed.y.toFixed(1)})`
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            min: visXMin,
+            max: visXMax,
+            title: { display:true, text:'Arlo-cel Lots per Week', color:'#444', font:{size:11,weight:'bold'} },
+            grid: { color:'#eeeeee' },
+            border: { color:'#bbbbbb' },
+          },
+          y: {
+            type: 'linear',
+            min: visYMin,
+            max: visYMax,
+            title: { display:true, text:'Breyanzi Lots per Week', color:'#444', font:{size:11,weight:'bold'} },
+            grid: { color:'#eeeeee' },
+            border: { color:'#bbbbbb' },
+          }
+        }
+      }
+    });
+  } else {
+    // Update existing chart
+    chart.data.datasets = datasets;
+    chart.options.scales.x.min = visXMin;
+    chart.options.scales.x.max = visXMax;
+    chart.options.scales.y.min = visYMin;
+    chart.options.scales.y.max = visYMax;
+    chart.update('none'); // no animation — keeps UI snappy
+  }
+
+  // KPIs, bottleneck, util bars (skip on fast zoom/pan redraws)
+  if (!fastRedraw) {
+    const blEl = document.getElementById('binding-label');
+    blEl.textContent = `⚡ Pinch point: ${bindRes.label} at ${(bindingUtil*100).toFixed(1)}%`;
+    blEl.style.color = bindingUtil>1?'#e74c3c':bindingUtil>0.8?'#e67e22':'#27ae60';
+
+    mainResources.forEach(r => {
+      const int=getIntercepts(r), u=getUtil(r,arloLots,breLots);
+      const color=u>1?'#e74c3c':u>0.8?'#e67e22':'#27ae60', txt=(u*100).toFixed(1)+'%';
+      setEl(`kpi-${r.id}-arlo`,  int.maxArlo.toFixed(1));
+      setEl(`kpi-${r.id}-bre`,   int.maxBre.toFixed(1));
+      setElColor(`kpi-${r.id}-util`, txt, color);
+      setEl(`sum-${r.id}-arlo`,  int.maxArlo.toFixed(1));
+      setEl(`sum-${r.id}-bre`,   int.maxBre.toFixed(1));
+      setElColor(`sum-${r.id}-util`, txt, color);
+      setEl(`sint-${r.id}-arlo`, int.maxArlo.toFixed(1));
+      setEl(`sint-${r.id}-bre`,  int.maxBre.toFixed(1));
+    });
+
+    renderBottleneck(mainResources, arloLots, breLots, bindingId);
+    renderUtilBars(mainResources, arloLots, breLots, bindingId);
+  }
+}
+
+function setEl(id,val){const e=document.getElementById(id);if(e)e.textContent=val;}
+function setElColor(id,val,color){const e=document.getElementById(id);if(e){e.textContent=val;e.style.color=color;}}
+
+function renderBottleneck(resources,arloLots,breLots,bindingId){
+  const rows=resources.map(r=>({...r,u:getUtil(r,arloLots,breLots)})).sort((a,b)=>b.u-a.u);
+  let html='';
+  rows.forEach(r=>{
+    const pct=(r.u*100).toFixed(1),cls=r.u>1?'over':r.u>0.8?'warn':'ok';
+    const barW=Math.min(r.u*100,100).toFixed(1),barColor=r.u>1?'#e74c3c':r.u>0.8?'#e67e22':'#27ae60';
+    const isB=r.id===bindingId;
+    const bCls=r.u>1?'badge-binding':r.u>0.8?'badge-warn':'badge-ok';
+    const bTxt=isB?'⚡ PINCH':r.u>1?'OVER':r.u>0.8?'WARN':'OK';
+    html+=`<div class="bn-item"><span class="bn-name" style="color:${r.color}">${r.emoji} ${r.label}</span><span class="bn-badge ${isB?'badge-binding':bCls}">${bTxt}</span><span class="bn-pct ${cls}">${pct}%</span></div><div class="bn-bar-bg"><div class="bn-bar" style="width:${barW}%;background:${barColor}"></div></div>`;
+  });
+  document.getElementById('bn-list').innerHTML=html||'—';
+}
+
+function renderUtilBars(resources,arloLots,breLots,bindingId){
+  let html='';
+  resources.forEach(r=>{
+    const u=getUtil(r,arloLots,breLots),pct=(u*100).toFixed(1);
+    const barW=Math.min(u*100,100).toFixed(1),fill=u>1?'#e74c3c':u>0.8?'#e67e22':r.color;
+    const isB=r.id===bindingId,isVisible=flags[r.id];
+    html+=`<div class="util-row" style="border-radius:6px;padding:2px 4px;border:${isB?`2px solid ${r.color}`:'1.5px solid transparent'};opacity:${isVisible?1:0.45};">
+      <div class="util-lbl" style="color:${r.color}">${r.emoji} ${r.label}
+        ${isB?'<span style="font-size:0.58rem;background:#fde8e8;color:#c0392b;border-radius:7px;padding:0 4px;margin-left:2px;">⚡</span>':''}
+        ${!isVisible?'<span style="font-size:0.58rem;color:#aaa;margin-left:2px;">(hidden)</span>':''}
+      </div>
+      <div class="util-bar-bg"><div class="util-bar-fill" style="width:${barW}%;background:${fill}"></div><span class="util-bar-text">${pct}%</span></div>
+      <div class="util-pct" style="color:${fill}">${pct}%</div>
+    </div>`;
+  });
+  document.getElementById('util-bars').innerHTML=html;
+}
+
+function validateWhole(el){const v=parseFloat(el.value);if(isNaN(v)||v<=0||!Number.isInteger(v)){el.classList.add('invalid');showToast('Must be a positive whole number.');return false;}el.classList.remove('invalid');return true;}
+function validatePos(el){const v=parseFloat(el.value);if(isNaN(v)||v<=0){el.classList.add('invalid');showToast('Must be a positive number.');return false;}el.classList.remove('invalid');return true;}
+
+let toastTimer;
+function showToast(msg){const t=document.getElementById('toast');t.textContent='⚠️ '+msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3500);}
+</script>
+</body>
+</html>
