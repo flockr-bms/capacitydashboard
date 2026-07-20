@@ -786,7 +786,7 @@ function updatePinchBanner(bindRes, bindingUtil) {
   banner.style.color       = bindRes.color;
   document.getElementById('pb-name').textContent = `${bindRes.emoji} ${bindRes.label}`;
   document.getElementById('pb-name').style.color = bindRes.color;
-  document.getElementById('pb-util').textContent = `${pct}% utilization at current mix`;
+  document.getElementById('pb-util').textContent = `${pct}% of utilization limit at current mix`;
   document.getElementById('pb-util').style.color = isOver?'#c0392b':isWarn?'#d35400':'#1e8449';
   document.getElementById('pb-badge').textContent = isOver?'🔴 OVER CAPACITY':isWarn?'🟡 WARNING':'🟢 OK';
   document.getElementById('pb-swatch').innerHTML = legendLineSVG(bindRes, 48, 16, true);
